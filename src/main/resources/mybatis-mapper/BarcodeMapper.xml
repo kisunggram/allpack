@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.BarcodeMapper">
+
+	<!-- Barcode -->
+    <select id="getProductList" parameterType="String" resultType="com.allpack.rm.dto.BarcodeDto">
+        SELECT
+			store, barcode, qty, product, location, regDate, scanDate
+        FROM RETURN_TARGET
+        WHERE store = #{store}
+        ORDER BY qty DESC, location
+    </select>
+
+	<insert id="insProduct" parameterType="com.allpack.rm.dto.BarcodeDto">
+		INSERT INTO RETURN_TARGET (
+			store, barcode, qty, product, location, regDate
+		) VALUES (
+			#{store}, #{barcode}, #{qty}, #{product}, #{location}, now()
+		)
+	</insert>
+
+    <update id="setLocation" parameterType="com.allpack.rm.dto.BarcodeDto">
+        UPDATE RETURN_TARGET
+		SET location = #{location}
+        WHERE store = #{store} AND barcode = #{barcode}
+    </update>
+
+	<delete id="clearProduct" parameterType="String">
+		DELETE FROM RETURN_TARGET
+		WHERE store = #{store}
+	</delete>
+
+	<!-- Barcode API -->
+    <select id="getBarcode" parameterType="com.allpack.rm.dto.BarcodeDto" resultType="com.allpack.rm.dto.BarcodeDto">
+        SELECT
+			store, barcode, qty, product, location, regDate, scanDate
+        FROM RETURN_TARGET
+        WHERE store = #{store} AND barcode = #{barcode}
+    </select>
+
+    <update id="scanBarcode" parameterType="com.allpack.rm.dto.BarcodeDto">
+        UPDATE RETURN_TARGET
+		SET scanDate = now()
+        WHERE store = #{store} AND barcode = #{barcode}
+    </update>
+
+</mapper>

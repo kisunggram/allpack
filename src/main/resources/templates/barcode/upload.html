@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>반품파일 업로드</title>
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+	<script>
+		function sortTable(n) {
+		  var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+		  table = document.getElementById("barcodeTable");
+		  switching = true;
+		  dir = "asc";
+		  while (switching) {
+			switching = false;
+			rows = table.rows;
+			for (i = 1; i < (rows.length - 1); i++) {
+			  shouldSwitch = false;
+			  x = rows[i].getElementsByTagName("TD")[n];
+			  y = rows[i + 1].getElementsByTagName("TD")[n];
+			  if (dir == "asc") {
+				if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+				  shouldSwitch = true;
+				  break;
+				}
+			  } else if (dir == "desc") {
+				if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+				  shouldSwitch = true;
+				  break;
+				}
+			  }
+			}
+			if (shouldSwitch) {
+			  rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+			  switching = true;
+			  switchcount ++;
+			} else {
+			  if (switchcount == 0 && dir == "asc") {
+				dir = "desc";
+				switching = true;
+			  }
+			}
+		  }
+		}
+
+		function verifyDiff(id){
+			let inputLoc = document.getElementById(id);
+			let loc = inputLoc.getAttribute('loc');
+			inputLoc.style.backgroundColor = inputLoc.value != loc ? '#ff4800' : '#ffffff';
+		}
+		</script>
+</head>
+<body>
+<div>
+	<table border=0 cellpadding=0 cellspacing=0 class="title_table">
+    <tr>
+        <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}"> <a th:href="@{/barcode?store=} + ${id}" th:text="${StoreName.get(id)}"></a> </th>
+		<th> </th>
+	</tr>
+	<tr><td colspan="4" th:class="${store}">
+		<div>
+			<form method="POST" enctype="multipart/form-data" action="/barcode">
+				<input type="hidden" name="store" th:value="${store}"/>
+				<div><input type='checkbox' name='clear' value="1" checked/><label>기존 정보 제거후 등록</label></div>
+				<div>반품 엑셀파일:<input type="file" name="excel" /> <input type="submit" value="업로드" /></div>
+			</form>
+		</div>
+	</td></tr>
+	</table>
+</div>
+<div>
+	<p>바코드 스캔 건수 [ <span th:text="${scanCnt}"></span> / <span th:text="${totalCnt}"></span> ]</p>
+	<form name="excel" method="POST" action="/barcode/download">
+		<input type="hidden" name="store" th:value="${store}"/>
+	</form>
+	<form name="relocate" method="POST" action="/barcode/relocate">
+		<input type="hidden" name="store" th:value="${store}"/>
+		<table id="barcodeTable" border=0 cellpadding=0 cellspacing=0 class='rst_table' th:classappend="${store}">
+			<caption><a href="javascript:document.forms['excel'].submit();">
+				<img src="XlsIcon.jpg" border="0" align="top" style="height:30px;"></a> &nbsp;&nbsp;&nbsp;
+				<input type="submit" value="위치 수정" align="middle" style="height:30px;"/></caption>
+			<thead>
+				<tr>
+					<th>No</th>
+					<th style="cursor: pointer;" onclick="sortTable(1)">바코드</th>
+					<th style="cursor: pointer;" onclick="sortTable(2)"><nobr>수량</nobr></th>
+					<th style="cursor: pointer;" onclick="sortTable(3)" colspan="2"><nobr>장소</nobr></th>
+					<th><nobr>처리일</nobr></th>
+					<th>제품</th>
+				</tr>
+			</thead>
+			<tbody th:each="vo, iterState:${barcodes}">
+				<tr>
+					<input type="hidden" name="barcode" th:value="${vo.barcode}"/>
+					<td th:text="${iterState.index+1}"></td>	
+					<td th:text="${vo.barcode}"></td>
+					<td th:text="${vo.qty}"></td>
+					<td th:text="${vo.location}"></td>
+					<td><input type="text" name="reloc" th:value="${vo.location}" size="4" th:loc="${vo.location}"
+						th:id="'b_'+ ${vo.barcode}" th:onchange="verifyDiff(this.getAttribute('id'))"/></td>
+					<td th:text="${vo.scanDate}"></td>
+					<td th:text="${vo.product}"></td>
+				</tr>
+			</tbody> 
+		</table>
+	</form>
+</div>
+
+</body>
+</html>

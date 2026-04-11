@@ -1,0 +1,64 @@
+.ssg th { background-color:#f1948a; }
+th.ssg  { background-color:#f1948a; }
+td.ssg  { background-color:#f1948a; }
+
+.cjonstyle th { background-color:#5dade2; }
+th.cjonstyle  { background-color:#5dade2; }
+td.cjonstyle  { background-color:#5dade2; }
+
+.etc th { background-color:#f5b041; }
+th.etc  { background-color:#f5b041; }
+td.etc  { background-color:#f5b041; }
+
+a { text-decoration-line: none; }
+body { font-size:12px;font-weight:bolder;color:#4D5B67; }
+
+table.title_table {
+     width:560px;
+}
+.title_table th {
+     width:100px;
+     padding:10px;
+     text-align:center;
+}
+.title_table td {
+     padding:10px;
+}
+
+.rst_table {
+     width:560px;
+	border-top:3px solid #4D5B67;
+     border-collapse:collapse;
+}
+
+.rst_table th {
+     padding:6px;
+     text-align:center;
+     vertical-align:top;
+	border: 1px solid #494949;
+}
+
+.rst_table tbody td {
+     vertical-align:middle;
+	border: 1px solid #494949;
+     padding:4px;
+
+     text-overflow: ellipsis;
+     white-space: nowrap;
+     overflow: hidden;
+     word-break: break-all;
+}
+
+.fix_w100 tbody td { width:100px; }
+
+
+col {text-align:center}
+col.barcode { background-color:#BDBEC0;}
+col.product { background-color:#BDBEC0;}
+col.location { background-color:#BDBEC0;}
+
+caption {
+     caption-side: top;
+     text-align: right;
+     padding:4px;
+}
