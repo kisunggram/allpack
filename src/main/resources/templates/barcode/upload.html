@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>반품파일 업로드</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
     <link rel="stylesheet" type="text/css" href="/barcode.css">
 	<script>
 		function sortTable(n) {
@@ -50,6 +51,11 @@
 		</script>
 </head>
 <body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('general')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','일반관리'} })}"></div>
+<div class="content-body">
 <div>
 	<table border=0 cellpadding=0 cellspacing=0 class="title_table">
     <tr>
@@ -61,7 +67,11 @@
 			<form method="POST" enctype="multipart/form-data" action="/barcode">
 				<input type="hidden" name="store" th:value="${store}"/>
 				<div><input type='checkbox' name='clear' value="1" checked/><label>기존 정보 제거후 등록</label></div>
-				<div>반품 엑셀파일:<input type="file" name="excel" /> <input type="submit" value="업로드" /></div>
+				<div>반품 엑셀파일:
+					<label class="file-label" for="file_general">파일 선택</label>
+					<input type="file" name="excel" id="file_general" class="file-input" onchange="document.getElementById('fn_general').textContent=this.files[0]?this.files[0].name:'선택된 파일 없음'"/>
+					<span class="file-name" id="fn_general">선택된 파일 없음</span>
+					<input type="submit" value="업로드" /></div>
 			</form>
 		</div>
 	</td></tr>
@@ -104,6 +114,9 @@
 		</table>
 	</form>
 </div>
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
 
 </body>
 </html>

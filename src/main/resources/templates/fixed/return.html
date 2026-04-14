@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>고정관리 - 반품등록</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <script>
+        function submitUpdates() {
+            var rows = document.querySelectorAll('tr[data-id]');
+            var promises = [];
+            rows.forEach(function(row) {
+                var id = row.getAttribute('data-id');
+                var vipChk = row.querySelector('.vip-chk');
+                var vipLoc = row.querySelector('.vip-loc');
+                var qtyInput = row.querySelector('.qty-input');
+
+                if (!vipChk) return;
+
+                promises.push(
+                    fetch('/fixed/return/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'id=' + id +
+                              '&qty=' + (qtyInput ? qtyInput.value : 0) +
+                              '&vip=' + (vipChk.checked ? 'true' : 'false') +
+                              '&vipLocation=' + encodeURIComponent(vipLoc ? vipLoc.value : '')
+                    }).then(r => r.json())
+                );
+            });
+            if (promises.length === 0) return;
+            Promise.all(promises).then(function() {
+                location.reload();
+            });
+        }
+
+        function toggleVipLoc(chk) {
+            var row = chk.closest('tr');
+            var vipLoc = row.querySelector('.vip-loc');
+            if (vipLoc) {
+                vipLoc.disabled = !chk.checked;
+                if (!chk.checked) vipLoc.value = '';
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('fixed-return')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','반품등록'} })}"></div>
+<div class="content-body">
+
+    <table border="0" cellpadding="0" cellspacing="0" class="title_table">
+    <tr>
+        <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}">
+            <a th:href="@{/fixed/return(store=${id})}" th:text="${StoreName.get(id)}"></a>
+        </th>
+    </tr>
+    <tr><td colspan="3" th:class="${store}">
+        <form method="POST" enctype="multipart/form-data" action="/fixed/return/upload">
+            <input type="hidden" name="store" th:value="${store}"/>
+            <span>
+                <label class="file-label" for="file_ret">파일 선택</label>
+                <input type="file" name="excel" id="file_ret" class="file-input" onchange="document.getElementById('fn_ret').textContent=this.files[0]?this.files[0].name:'선택된 파일 없음'"/>
+                <span class="file-name" id="fn_ret">선택된 파일 없음</span>
+                <input type="submit" value="업로드"/>
+            </span>
+            <span th:if="${uploadDate != null}" style="margin-left:15px;">
+                업데이트 일자 : <span th:text="${uploadDate}"></span>
+            </span>
+        </form>
+    </td></tr>
+    </table>
+
+    <div style="margin-top:10px;">
+        <table border="0" cellpadding="0" cellspacing="0" class="rst_table" th:classappend="${store}">
+            <caption>
+                <form name="retDownload" method="POST" action="/fixed/return/download" style="display:inline;">
+                    <input type="hidden" name="store" th:value="${store}"/>
+                    <input type="hidden" name="date" th:value="${uploadDate}"/>
+                    <input type="button" value="엑셀 다운로드" onclick="document.forms['retDownload'].submit();" style="height:30px;"/>
+                </form>
+                &nbsp;
+                <input type="button" value="수정" onclick="submitUpdates()" style="height:30px;"/>
+            </caption>
+            <thead>
+            <tr>
+                <th>vip</th>
+                <th>vip-위치</th>
+                <th>장소</th>
+                <th>바코드</th>
+                <th>품목명</th>
+                <th>수량</th>
+            </tr>
+            </thead>
+            <tbody th:each="vo : ${list}">
+            <tr th:data-id="${vo.id}">
+                <td style="text-align:center;">
+                    <input type="checkbox" class="vip-chk" th:checked="${vo.vip}" onchange="toggleVipLoc(this)"
+                           th:style="${vo.location == '시즌아웃'} ? 'display:none' : ''"/>
+                </td>
+                <td>
+                    <input type="text" class="vip-loc" th:value="${vo.vipLocation}" size="4"
+                           th:disabled="${!vo.vip}"
+                           th:style="${vo.location == '시즌아웃'} ? 'display:none' : ''"/>
+                </td>
+                <td th:text="${vo.location}"></td>
+                <td th:text="${vo.mainBarcode}"></td>
+                <td th:text="${vo.product}"></td>
+                <td><input type="number" class="qty-input" th:value="${vo.qty}" size="5" style="width:60px;"/></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
+</body>
+</html>

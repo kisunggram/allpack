@@ -3,9 +3,7 @@ package com.allpack.rm.controller;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +19,7 @@ import org.springframework.ui.Model;
 
 import com.allpack.rm.dto.BarcodeDto;
 import com.allpack.rm.service.BarcodeService;
+import com.allpack.rm.store.StoreRegistry;
 
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -30,22 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class BarcodeController {
 
     private final BarcodeService barcodeService;
-
-    // 기본 정보. 사용자가 설정했던 옵션들 기억
-    private static List<String> StoreId;
-    private static Map<String, String> StoreName;
-
-    static {
-        StoreId = new ArrayList<String>();
-        StoreId.add("ssg");
-        StoreId.add("cjonstyle");
-        StoreId.add("etc");
-
-        StoreName = new HashMap<String, String>();
-        StoreName.put("ssg", "신세계");
-        StoreName.put("cjonstyle", "온스타일");
-        StoreName.put("etc", "기타");
-    }
+    private final StoreRegistry storeRegistry;
     
 
     @GetMapping("/")
@@ -65,7 +49,7 @@ public class BarcodeController {
         @RequestParam(value = "store", required = false) String store) {
 
         if (store == null || store.isEmpty())
-            store = StoreId.get(0);
+            store = storeRegistry.getStoreIds().get(0);
 
         int totalCnt = 0;
         int scanCnt = 0;
@@ -82,8 +66,8 @@ public class BarcodeController {
         log.info("### G[/barcode] store:{}, barcodesCnt:{}", store, barcodes.size());
 
         ModelAndView mv = new ModelAndView("barcode/upload");
-        mv.addObject("StoreId", StoreId);
-        mv.addObject("StoreName", StoreName);
+        mv.addObject("StoreId", storeRegistry.getStoreIds());
+        mv.addObject("StoreName", storeRegistry.getStoreNames());
         mv.addObject("store", store);
         mv.addObject("totalCnt", totalCnt);
         mv.addObject("scanCnt", scanCnt);
@@ -135,16 +119,22 @@ public class BarcodeController {
         HttpServletResponse response) {
 
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmm");
-	    String filename = String.format("%s_%s.xlsx", StoreName.get(store), formatter.format(new Date()));
+	    String filename = String.format("%s_%s.xlsx", storeRegistry.getStoreNames().get(store), formatter.format(new Date()));
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setHeader("Content-Disposition", String.format("attachment;filename=%s", URLEncoder.encode(filename, StandardCharsets.UTF_8)));
-        
-        String errMsg = "";
+
         try {
-            errMsg = barcodeService.GetExcel(store, StoreName.get(store), response.getOutputStream());
+            String errMsg = barcodeService.GetExcel(store, storeRegistry.getStoreNames().get(store), response.getOutputStream());
+            if (!errMsg.isEmpty()) {
+                response.reset();
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setContentType("text/plain; charset=UTF-8");
+                response.getWriter().write(errMsg);
+            }
         } catch (Exception ex) {
-            errMsg = ex.getMessage();
+            log.error("### [download] store: {}, Ex: {}", store, ex.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 

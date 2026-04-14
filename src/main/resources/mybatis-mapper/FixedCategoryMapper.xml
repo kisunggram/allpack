@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.FixedCategoryMapper">
+
+    <select id="getListByStore" parameterType="String" resultType="com.allpack.rm.dto.FixedCategoryDto">
+        SELECT store, mainBarcode, subBarcode, product, location, regDate
+        FROM FIXED_CATEGORY
+        WHERE store = #{store}
+        ORDER BY
+            CASE WHEN location IS NULL OR location = '' OR location = '시즌아웃' THEN 1 ELSE 0 END,
+            CAST(location AS UNSIGNED),
+            location
+    </select>
+
+    <insert id="insertCategory" parameterType="com.allpack.rm.dto.FixedCategoryDto">
+        INSERT INTO FIXED_CATEGORY (store, mainBarcode, subBarcode, product, location, regDate)
+        VALUES (#{store}, #{mainBarcode}, #{subBarcode}, #{product}, #{location}, now())
+    </insert>
+
+    <delete id="deleteByStore" parameterType="String">
+        DELETE FROM FIXED_CATEGORY WHERE store = #{store}
+    </delete>
+
+    <update id="updateLocation" parameterType="com.allpack.rm.dto.FixedCategoryDto">
+        UPDATE FIXED_CATEGORY
+        SET location = #{location}
+        WHERE store = #{store} AND mainBarcode = #{mainBarcode}
+    </update>
+
+    <select id="checkDuplicateLocation" resultType="int">
+        SELECT COUNT(*) FROM FIXED_CATEGORY
+        WHERE store = #{store} AND location = #{location} AND mainBarcode != #{mainBarcode}
+    </select>
+
+</mapper>

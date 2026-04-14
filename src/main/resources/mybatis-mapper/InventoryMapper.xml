@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.InventoryMapper">
+
+    <select id="getList" resultType="com.allpack.rm.dto.InventoryDto">
+        SELECT id, area, place, location, barcode, product, itemCode, itemName,
+               baseQty, inQty, outQty, regDate
+        FROM INVENTORY
+        ORDER BY area, CAST(place AS UNSIGNED), place, location
+    </select>
+
+    <insert id="insertInventory" parameterType="com.allpack.rm.dto.InventoryDto">
+        INSERT INTO INVENTORY (area, place, location, barcode, product, itemCode, itemName, baseQty, inQty, outQty, regDate)
+        VALUES (#{area}, #{place}, #{location}, #{barcode}, #{product}, #{itemCode}, #{itemName}, #{baseQty}, 0, 0, now())
+    </insert>
+
+    <delete id="deleteAll">
+        DELETE FROM INVENTORY
+    </delete>
+
+    <update id="updateFields" parameterType="com.allpack.rm.dto.InventoryDto">
+        UPDATE INVENTORY
+        SET area = #{area}, place = #{place}, baseQty = #{baseQty}
+        WHERE id = #{id}
+    </update>
+
+    <update id="incrementIn" parameterType="Long">
+        UPDATE INVENTORY SET inQty = inQty + 1 WHERE id = #{id}
+    </update>
+
+    <update id="incrementOut" parameterType="Long">
+        UPDATE INVENTORY SET outQty = outQty + 1 WHERE id = #{id}
+    </update>
+
+</mapper>

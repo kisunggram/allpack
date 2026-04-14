@@ -27,5 +27,49 @@
         </table>
     </form>
 </div>
+
+<br/>
+
+<div>
+    <form method="POST" action="/api/fixed/scan">
+        <table>
+            <tr><th>POST</th><th>/api/fixed/scan</th></tr>
+            <tr><td>store</td><td>
+                <select name="store">
+                    <option value="ssg">ssg</option>
+                    <option value="cjonstyle">cjonstyle</option>
+                    <option value="etc">etc</option>
+                </select>
+            </td></tr>
+            <tr><td>code</td><td><input type="text" name="code"></td></tr>
+            <tr><td></td><td><input type="submit" value="호출" /></td></tr>
+        </table>
+    </form>
+</div>
+
+<br/>
+
+<div>
+    <form method="POST" action="/api/inventory/in">
+        <table>
+            <tr><th>POST</th><th>/api/inventory/in</th></tr>
+            <tr><td>id</td><td><input type="number" name="id"></td></tr>
+            <tr><td></td><td><input type="submit" value="호출" /></td></tr>
+        </table>
+    </form>
+</div>
+
+<br/>
+
+<div>
+    <form method="POST" action="/api/inventory/out">
+        <table>
+            <tr><th>POST</th><th>/api/inventory/out</th></tr>
+            <tr><td>id</td><td><input type="number" name="id"></td></tr>
+            <tr><td></td><td><input type="submit" value="호출" /></td></tr>
+        </table>
+    </form>
+</div>
+
 </body>
 </html>

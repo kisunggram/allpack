@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>재고관리</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <script>
+        function confirmUpload() {
+            return confirm('엑셀 업로드시 입고/출고 수량이 초기화되고 모든 데이터가 덮어씌워집니다.');
+        }
+
+        function submitUpdates() {
+            var rows = document.querySelectorAll('tr[data-id]');
+            var promises = [];
+            rows.forEach(function(row) {
+                var id = row.getAttribute('data-id');
+                var area = row.querySelector('.area-input').value;
+                var place = row.querySelector('.place-input').value;
+                var baseQty = row.querySelector('.baseqty-input').value;
+
+                promises.push(
+                    fetch('/inventory/update', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'id=' + id +
+                              '&area=' + encodeURIComponent(area) +
+                              '&place=' + encodeURIComponent(place) +
+                              '&baseQty=' + baseQty
+                    }).then(r => r.json())
+                );
+            });
+            if (promises.length === 0) return;
+            Promise.all(promises).then(function() {
+                location.reload();
+            });
+        }
+    </script>
+</head>
+<body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('inventory')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'재고관리'} })}"></div>
+<div class="content-body">
+
+    <form method="POST" enctype="multipart/form-data" action="/inventory/upload" onsubmit="return confirmUpload();">
+        <span>
+            <label class="file-label" for="file_inv">파일 선택</label>
+            <input type="file" name="excel" id="file_inv" class="file-input" onchange="document.getElementById('fn_inv').textContent=this.files[0]?this.files[0].name:'선택된 파일 없음'"/>
+            <span class="file-name" id="fn_inv">선택된 파일 없음</span>
+            <input type="submit" value="업로드"/>
+        </span>
+    </form>
+
+    <div style="margin-top:10px;">
+        <table border="0" cellpadding="0" cellspacing="0" class="rst_table">
+            <caption>
+                <form name="invDownload" method="POST" action="/inventory/download" style="display:inline;">
+                    <input type="button" value="엑셀 다운로드" onclick="document.forms['invDownload'].submit();" style="height:30px;"/>
+                </form>
+                &nbsp;
+                <input type="button" value="수정" onclick="submitUpdates()" style="height:30px;"/>
+            </caption>
+            <thead>
+            <tr>
+                <th>구역</th>
+                <th>장소</th>
+                <th>로케이션</th>
+                <th>바코드</th>
+                <th>품명</th>
+                <th>단품코드</th>
+                <th>단품명</th>
+                <th>기준수량</th>
+                <th>입고수량</th>
+                <th>출고수량</th>
+                <th>실수량</th>
+            </tr>
+            </thead>
+            <tbody th:each="vo : ${list}">
+            <tr th:data-id="${vo.id}">
+                <td><input type="text" class="area-input" th:value="${vo.area}" size="3"/></td>
+                <td><input type="text" class="place-input" th:value="${vo.place}" size="3"/></td>
+                <td th:text="${vo.location}"></td>
+                <td th:text="${vo.barcode}"></td>
+                <td th:text="${vo.product}"></td>
+                <td th:text="${vo.itemCode}"></td>
+                <td th:text="${vo.itemName}"></td>
+                <td><input type="number" class="baseqty-input" th:value="${vo.baseQty}" size="4" style="width:50px;"/></td>
+                <td th:text="${vo.inQty}"></td>
+                <td th:text="${vo.outQty}"></td>
+                <td th:text="${vo.realQty}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="sidebar(currentMenu)" class="sidebar" id="sidebar">
+    <button class="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
+    <div class="sidebar-content">
+
+        <div class="menu-group">
+            <div class="menu-title" onclick="toggleGroup(this)">
+                반품관리 <span class="arrow open">&#9654;</span>
+            </div>
+            <ul class="open">
+                <li>
+                    <a th:href="@{/barcode}" th:classappend="${currentMenu == 'general' ? 'active' : ''}">일반관리</a>
+                </li>
+                <li>
+                    <div class="submenu-title" onclick="toggleSubmenu(this)">
+                        고정관리 <span class="arrow" th:classappend="${currentMenu == 'fixed-category' || currentMenu == 'fixed-return' || currentMenu == 'fixed-history' ? 'open' : ''}">&#9654;</span>
+                    </div>
+                    <ul th:classappend="${currentMenu == 'fixed-category' || currentMenu == 'fixed-return' || currentMenu == 'fixed-history' ? 'open' : ''}">
+                        <li><a th:href="@{/fixed/category}" th:classappend="${currentMenu == 'fixed-category' ? 'active' : ''}">분류등록</a></li>
+                        <li><a th:href="@{/fixed/return}" th:classappend="${currentMenu == 'fixed-return' ? 'active' : ''}">반품등록</a></li>
+                        <li><a th:href="@{/fixed/history}" th:classappend="${currentMenu == 'fixed-history' ? 'active' : ''}">일자별 내역</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+
+        <div class="menu-group">
+            <div class="menu-title" onclick="toggleGroup(this)">
+                재고관리 <span class="arrow" th:classappend="${currentMenu == 'inventory' ? 'open' : ''}">&#9654;</span>
+            </div>
+            <ul th:classappend="${currentMenu == 'inventory' ? 'open' : ''}">
+                <li><a th:href="@{/inventory}" th:classappend="${currentMenu == 'inventory' ? 'active' : ''}">재고관리</a></li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function toggleGroup(el) {
+            var ul = el.nextElementSibling;
+            var arrow = el.querySelector('.arrow');
+            ul.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+
+        function toggleSubmenu(el) {
+            var ul = el.nextElementSibling;
+            var arrow = el.querySelector('.arrow');
+            ul.classList.toggle('open');
+            arrow.classList.toggle('open');
+        }
+    </script>
+</div>
+
+<div th:fragment="breadcrumb(paths)" class="breadcrumb">
+    <th:block th:each="p, iter : ${paths}">
+        <span th:text="${p}"></span>
+        <span th:if="${!iter.last}" class="sep">&gt;</span>
+    </th:block>
+</div>
+</body>
+</html>

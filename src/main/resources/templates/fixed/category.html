@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>고정관리 - 분류등록</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <script>
+        function confirmUpload() {
+            return confirm('엑셀 업로드시 모든 데이터가 초기화됩니다.');
+        }
+
+        function updateLocation(mainBarcode) {
+            var input = document.getElementById('loc_' + mainBarcode);
+            var store = document.getElementById('store').value;
+            var newLoc = input.value.trim();
+
+            fetch('/fixed/category/relocate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'store=' + encodeURIComponent(store) +
+                      '&mainBarcode=' + encodeURIComponent(mainBarcode) +
+                      '&location=' + encodeURIComponent(newLoc)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.result) {
+                    input.setAttribute('loc', newLoc);
+                    input.style.backgroundColor = '#ffffff';
+                } else {
+                    alert(data.message);
+                }
+            });
+        }
+
+        function verifyDiff(id) {
+            var input = document.getElementById(id);
+            var loc = input.getAttribute('loc');
+            input.style.backgroundColor = input.value != loc ? '#ff4800' : '#ffffff';
+        }
+    </script>
+</head>
+<body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('fixed-category')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','분류등록'} })}"></div>
+<div class="content-body">
+
+    <table border="0" cellpadding="0" cellspacing="0" class="title_table">
+    <tr>
+        <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}">
+            <a th:href="@{/fixed/category(store=${id})}" th:text="${StoreName.get(id)}"></a>
+        </th>
+    </tr>
+    <tr><td colspan="3" th:class="${store}">
+        <form method="POST" enctype="multipart/form-data" action="/fixed/category/upload" onsubmit="return confirmUpload();">
+            <input type="hidden" id="store" name="store" th:value="${store}"/>
+            <div>
+                <label class="file-label" for="file_cat">파일 선택</label>
+                <input type="file" name="excel" id="file_cat" class="file-input" onchange="document.getElementById('fn_cat').textContent=this.files[0]?this.files[0].name:'선택된 파일 없음'"/>
+                <span class="file-name" id="fn_cat">선택된 파일 없음</span>
+                <input type="submit" value="업로드"/>
+            </div>
+        </form>
+    </td></tr>
+    </table>
+
+    <!-- 업로드 결과 -->
+    <div th:if="${uploadResult != null}" style="margin-top:10px; padding:10px; border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; max-width:600px;">
+        <p style="margin:0 0 5px;">
+            업로드 완료 : 전체 <b th:text="${uploadResult.totalRows}"></b>건 중 <b th:text="${uploadResult.insertedCount}"></b>건 등록
+            <span th:if="${uploadResult.hasDuplicates()}" style="color:#e03131;">
+                , 중복 <b th:text="${uploadResult.duplicateTotalCount}"></b>건 제외
+            </span>
+        </p>
+        <div th:if="${uploadResult.hasDuplicates()}" style="margin-top:5px; padding:8px; background:#fff5f5; border:1px solid #ffc9c9; border-radius:3px; font-size:12px; color:#c92a2a;">
+            <b>중복 바코드 :</b>
+            <span th:each="entry, iter : ${uploadResult.duplicates}">
+                <span th:text="${entry.key}"></span>(<span th:text="${entry.value}"></span>건)<span th:if="${!iter.last}">, </span>
+            </span>
+        </div>
+    </div>
+
+    <div style="margin-top:10px;">
+        <table id="categoryTable" border="0" cellpadding="0" cellspacing="0" class="rst_table" th:classappend="${store}">
+            <caption>
+                <form name="catDownload" method="POST" action="/fixed/category/download" style="display:inline;">
+                    <input type="hidden" name="store" th:value="${store}"/>
+                    <input type="button" value="엑셀 다운로드" onclick="document.forms['catDownload'].submit();" style="height:30px;"/>
+                </form>
+                &nbsp;
+                <input type="button" value="수정" onclick="submitLocations()" style="height:30px;"/>
+            </caption>
+            <thead>
+            <tr>
+                <th>장소</th>
+                <th></th>
+                <th>바코드</th>
+                <th>품목명</th>
+            </tr>
+            </thead>
+            <tbody th:each="vo : ${list}">
+            <tr>
+                <td th:text="${vo.location}"></td>
+                <td><input type="text" th:value="${vo.location}" size="4"
+                           th:id="'loc_' + ${vo.mainBarcode}" th:loc="${vo.location}"
+                           th:onchange="verifyDiff(this.getAttribute('id'))"/></td>
+                <td th:text="${vo.mainBarcode}"></td>
+                <td th:text="${vo.product}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        function checkDuplicateLocations() {
+            var inputs = document.querySelectorAll('[id^="loc_"]');
+            // 변경된 장소값 수집 (현재 입력값 기준)
+            var locMap = {};  // location -> [mainBarcode, ...]
+            inputs.forEach(function(input) {
+                var loc = input.value.trim();
+                if (loc === '' || loc === '시즌아웃') return;
+                var mainBarcode = input.id.replace('loc_', '');
+                if (!locMap[loc]) locMap[loc] = [];
+                locMap[loc].push(mainBarcode);
+            });
+
+            var dupLocs = [];
+            for (var loc in locMap) {
+                if (locMap[loc].length > 1) dupLocs.push(loc);
+            }
+            return dupLocs;
+        }
+
+        function submitLocations() {
+            // 클라이언트 중복 체크
+            var dupLocs = checkDuplicateLocations();
+            if (dupLocs.length > 0) {
+                alert('중복되는 장소가 존재합니다. [' + dupLocs.join(', ') + ']');
+                return;
+            }
+
+            var inputs = document.querySelectorAll('[id^="loc_"]');
+            var store = document.getElementById('store').value;
+            var promises = [];
+            inputs.forEach(function(input) {
+                var loc = input.getAttribute('loc');
+                if (input.value.trim() !== loc) {
+                    var mainBarcode = input.id.replace('loc_', '');
+                    promises.push(
+                        fetch('/fixed/category/relocate', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'store=' + encodeURIComponent(store) +
+                                  '&mainBarcode=' + encodeURIComponent(mainBarcode) +
+                                  '&location=' + encodeURIComponent(input.value.trim())
+                        }).then(r => r.json())
+                    );
+                }
+            });
+            if (promises.length === 0) {
+                alert('변경된 장소가 없습니다.');
+                return;
+            }
+            Promise.all(promises).then(results => {
+                var dupList = [];
+                results.forEach(function(data) {
+                    if (!data.result) dupList.push(data.message);
+                });
+                if (dupList.length > 0) {
+                    alert(dupList.join('\n'));
+                } else {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
+</body>
+</html>

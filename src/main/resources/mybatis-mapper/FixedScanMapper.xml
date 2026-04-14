@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.FixedScanMapper">
+
+    <insert id="upsertScan">
+        INSERT INTO FIXED_SCAN (store, mainBarcode, uploadDate, scanDate, scanCount)
+        VALUES (#{store}, #{mainBarcode}, #{uploadDate}, #{scanDate}, 1)
+        ON DUPLICATE KEY UPDATE scanCount = scanCount + 1
+    </insert>
+
+    <select id="getHistoryByDate" resultType="com.allpack.rm.dto.FixedHistoryDto">
+        SELECT r.store, r.mainBarcode, c.product, c.location, r.qty, r.vip, r.vipLocation, r.uploadDate,
+               IFNULL(s.scanCount, 0) AS scanCount
+        FROM FIXED_RETURN r
+        JOIN FIXED_CATEGORY c ON r.store = c.store AND r.mainBarcode = c.mainBarcode
+        LEFT JOIN FIXED_SCAN s ON r.store = s.store AND r.mainBarcode = s.mainBarcode
+            AND r.uploadDate = s.uploadDate AND s.scanDate = #{scanDate}
+        WHERE r.store = #{store} AND r.uploadDate = #{uploadDate}
+        ORDER BY
+            CASE WHEN c.location IS NULL OR c.location = '' OR c.location = '시즌아웃' THEN 1 ELSE 0 END,
+            CAST(c.location AS UNSIGNED),
+            c.location
+    </select>
+
+    <select id="getScanDates" resultType="String">
+        SELECT DISTINCT DATE_FORMAT(scanDate, '%Y-%m-%d')
+        FROM FIXED_SCAN
+        WHERE store = #{store} AND scanDate BETWEEN #{startDate} AND #{endDate}
+        ORDER BY scanDate
+    </select>
+
+</mapper>

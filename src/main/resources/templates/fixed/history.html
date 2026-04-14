@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>고정관리 - 일자별 내역</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <style>
+        .date-picker-area { margin: 10px 0; display: flex; align-items: center; gap: 8px; }
+        .date-picker-area input[type="date"] {
+            border: 1px solid #ced4da; border-radius: 3px;
+            padding: 4px 8px; font-size: 13px; color: #343a40;
+        }
+    </style>
+    <script>
+        function onDateChange(input) {
+            var store = document.getElementById('storeVal').value;
+            var date = input.value;
+            if (date) {
+                location.href = '/fixed/history?store=' + encodeURIComponent(store) + '&date=' + date;
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('fixed-history')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','일자별 내역'} })}"></div>
+<div class="content-body">
+    <input type="hidden" id="storeVal" th:value="${store}"/>
+
+    <table border="0" cellpadding="0" cellspacing="0" class="title_table">
+    <tr>
+        <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}">
+            <a th:href="@{/fixed/history(store=${id})}" th:text="${StoreName.get(id)}"></a>
+        </th>
+    </tr>
+    </table>
+
+    <!-- 날짜 선택 -->
+    <div class="date-picker-area">
+        <label>조회 일자 :</label>
+        <input type="date" th:value="${selectedDate}" th:max="${todayDate}" onchange="onDateChange(this)"/>
+    </div>
+
+    <!-- 선택된 날짜의 상세 -->
+    <div th:if="${selectedDate != null}">
+        <p>반품등록 일자(엑셀 업로드 기준) : <span th:text="${uploadDate != null ? uploadDate : '-'}"></span></p>
+
+        <table th:if="${!#lists.isEmpty(historyList)}" border="0" cellpadding="0" cellspacing="0" class="rst_table" th:classappend="${store}">
+            <thead>
+            <tr>
+                <th>장소</th>
+                <th>바코드</th>
+                <th>품목명</th>
+                <th>수량</th>
+                <th>당일체크수량</th>
+            </tr>
+            </thead>
+            <tbody th:each="vo : ${historyList}">
+            <tr>
+                <td th:text="${vo.location}"></td>
+                <td th:text="${vo.mainBarcode}"></td>
+                <td th:text="${vo.product}"></td>
+                <td th:text="${vo.qty}"></td>
+                <td th:text="${vo.scanCount}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <p th:if="${#lists.isEmpty(historyList)}">해당 일자에 내역이 없습니다.</p>
+    </div>
+
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
+</body>
+</html>

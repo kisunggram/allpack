@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.FixedReturnMapper">
+
+    <select id="getListByStoreAndDate" resultType="com.allpack.rm.dto.FixedReturnDto">
+        SELECT r.id, r.store, r.mainBarcode, r.qty, r.vip, r.vipLocation, r.uploadDate, r.updateDate,
+               c.product, c.location
+        FROM FIXED_RETURN r
+        JOIN FIXED_CATEGORY c ON r.store = c.store AND r.mainBarcode = c.mainBarcode
+        WHERE r.store = #{store} AND r.uploadDate = #{uploadDate}
+        ORDER BY
+            CASE WHEN c.location IS NULL OR c.location = '' OR c.location = '시즌아웃' THEN 1 ELSE 0 END,
+            CAST(c.location AS UNSIGNED),
+            c.location
+    </select>
+
+    <select id="getLatestUploadDate" parameterType="String" resultType="String">
+        SELECT MAX(uploadDate) FROM FIXED_RETURN WHERE store = #{store}
+    </select>
+
+    <insert id="insertReturn" parameterType="com.allpack.rm.dto.FixedReturnDto">
+        INSERT INTO FIXED_RETURN (store, mainBarcode, qty, vip, vipLocation, uploadDate, updateDate)
+        VALUES (#{store}, #{mainBarcode}, #{qty}, #{vip}, #{vipLocation}, #{uploadDate}, now())
+    </insert>
+
+    <delete id="deleteByStoreAndDate">
+        DELETE FROM FIXED_RETURN WHERE store = #{store} AND uploadDate = #{uploadDate}
+    </delete>
+
+    <update id="updateReturn" parameterType="com.allpack.rm.dto.FixedReturnDto">
+        UPDATE FIXED_RETURN
+        SET qty = #{qty}, vip = #{vip}, vipLocation = #{vipLocation}, updateDate = now()
+        WHERE id = #{id}
+    </update>
+
+    <select id="getDistinctDates" resultType="String">
+        SELECT DISTINCT DATE_FORMAT(uploadDate, '%Y-%m-%d') FROM FIXED_RETURN
+        WHERE store = #{store} AND uploadDate BETWEEN #{startDate} AND #{endDate}
+        ORDER BY uploadDate
+    </select>
+
+</mapper>
