@@ -12,7 +12,7 @@
 
     <insert id="insertInventory" parameterType="com.allpack.rm.dto.InventoryDto">
         INSERT INTO INVENTORY (area, place, location, barcode, product, itemCode, itemName, baseQty, inQty, outQty, regDate)
-        VALUES (#{area}, #{place}, #{location}, #{barcode}, #{product}, #{itemCode}, #{itemName}, #{baseQty}, 0, 0, now())
+        VALUES (#{area}, #{place}, #{location}, #{barcode}, #{product}, #{itemCode}, #{itemName}, #{baseQty}, #{inQty}, #{outQty}, now())
     </insert>
 
     <delete id="deleteAll">

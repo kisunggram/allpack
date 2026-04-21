@@ -30,4 +30,15 @@
         ORDER BY scanDate
     </select>
 
+    <select id="getCategoryHistoryByDate" resultType="com.allpack.rm.dto.FixedHistoryDto">
+        SELECT DISTINCT c.store, c.mainBarcode, c.product, c.location
+        FROM FIXED_SCAN s
+        JOIN FIXED_CATEGORY c ON c.store = s.store AND c.mainBarcode = s.mainBarcode
+        WHERE s.store = #{store} AND s.uploadDate = #{uploadDate} AND s.scanDate = #{scanDate}
+        ORDER BY
+            CASE WHEN c.location IS NULL OR c.location = '' OR c.location = '시즌아웃' THEN 1 ELSE 0 END,
+            CAST(c.location AS UNSIGNED),
+            c.location
+    </select>
+
 </mapper>

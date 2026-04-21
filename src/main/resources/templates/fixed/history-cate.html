@@ -2,7 +2,7 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>고정관리 - 일자별 내역</title>
+    <title>고정관리 - 분류고정내역</title>
     <link rel="stylesheet" type="text/css" href="/common.css">
     <link rel="stylesheet" type="text/css" href="/barcode.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -19,16 +19,15 @@
 </head>
 <body>
 <div class="layout">
-<div th:replace="~{fragments/sidebar :: sidebar('fixed-history')}"></div>
+<div th:replace="~{fragments/sidebar :: sidebar('fixed-history-cate')}"></div>
 <div class="main-content">
-<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','일자별 내역'} })}"></div>
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','분류고정내역'} })}"></div>
 <div class="content-body">
-    <input type="hidden" id="storeVal" th:value="${store}"/>
 
     <table border="0" cellpadding="0" cellspacing="0" class="title_table">
     <tr>
         <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}">
-            <a th:href="@{/fixed/history(store=${id})}" th:text="${StoreName.get(id)}"></a>
+            <a th:href="@{/fixed/history-cate(store=${id})}" th:text="${StoreName.get(id)}"></a>
         </th>
     </tr>
     </table>
@@ -50,7 +49,7 @@
         var navGuard = false;
 
         function loadMonthDates(year, month, fp) {
-            fetch('/fixed/history/dates?store=' + encodeURIComponent(storeVal) +
+            fetch('/fixed/history-cate/dates?store=' + encodeURIComponent(storeVal) +
                   '&year=' + year + '&month=' + month)
                 .then(r => r.json())
                 .then(dates => {
@@ -91,7 +90,7 @@
             },
             onChange: function(dates, dateStr) {
                 if (dateStr) {
-                    location.href = '/fixed/history?store=' + encodeURIComponent(storeVal) + '&date=' + dateStr;
+                    location.href = '/fixed/history-cate?store=' + encodeURIComponent(storeVal) + '&date=' + dateStr;
                 }
             }
         });
@@ -102,13 +101,20 @@
         <p>반품등록 일자(엑셀 업로드 기준) : <span th:text="${uploadDate != null ? uploadDate : '-'}"></span></p>
 
         <table th:if="${!#lists.isEmpty(historyList)}" border="0" cellpadding="0" cellspacing="0" class="rst_table" th:classappend="${store}">
+            <caption>
+                <form name="histCateDownload" method="POST" action="/fixed/history-cate/download" style="display:inline;">
+                    <input type="hidden" name="store" th:value="${store}"/>
+                    <input type="hidden" name="uploadDate" th:value="${uploadDate}"/>
+                    <input type="hidden" name="date" th:value="${selectedDate}"/>
+                    <a href="javascript:document.forms['histCateDownload'].submit();">
+                        <img src="/XlsIcon.jpg" border="0" align="top" style="height:30px;"></a>
+                </form>
+            </caption>
             <thead>
             <tr>
                 <th>장소</th>
                 <th>바코드</th>
                 <th>품목명</th>
-                <th>수량</th>
-                <th>당일체크수량</th>
             </tr>
             </thead>
             <tbody th:each="vo : ${historyList}">
@@ -116,8 +122,6 @@
                 <td th:text="${vo.location}"></td>
                 <td th:text="${vo.mainBarcode}"></td>
                 <td th:text="${vo.product}"></td>
-                <td th:text="${vo.qty}"></td>
-                <td th:text="${vo.scanCount}"></td>
             </tr>
             </tbody>
         </table>

@@ -19,4 +19,8 @@ public interface FixedScanMapper {
     List<String> getScanDates(@Param("store") String store,
                               @Param("startDate") String startDate,
                               @Param("endDate") String endDate);
+
+    List<FixedHistoryDto> getCategoryHistoryByDate(@Param("store") String store,
+                                                   @Param("uploadDate") String uploadDate,
+                                                   @Param("scanDate") String scanDate);
 }

@@ -50,3 +50,11 @@ CREATE TABLE IF NOT EXISTS INVENTORY (
   PRIMARY KEY (id),
   KEY idx_inventory_barcode (barcode)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS UTILE_CATEGORY (
+  location     VARCHAR(20)  DEFAULT NULL,
+  barcode      VARCHAR(20)  NOT NULL,
+  product      VARCHAR(255) DEFAULT NULL,
+  qty          INT          NOT NULL DEFAULT 0,
+  PRIMARY KEY (barcode)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

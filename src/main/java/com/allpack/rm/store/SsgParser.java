@@ -1,7 +1,10 @@
 package com.allpack.rm.store;
 
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import com.allpack.rm.util.ExcelHeaderUtils;
 import org.apache.poi.ss.usermodel.*;
 
 import com.allpack.rm.dto.BarcodeDto;
@@ -27,24 +30,41 @@ public class SsgParser implements StoreParser {
         return code.length() > 11 ? code.substring(0, 11) : code;
     }
 
+    Pattern barcodePattern = Pattern.compile("^\\d{8}-\\d{3}-.*$");
     @Override
     public CategoryParseResult parseCategoryRow(Row row, DataFormatter formatter, Map<String, Integer> colIdx) {
         // SSG: 품목명 = PrdCode-ItemCode-제품명
         Integer prdIdx = colIdx.get("품목명");
         if (prdIdx == null) return null;
+        String prdVal = ExcelHeaderUtils.getCellString(row, formatter, prdIdx);
+        if (prdVal == null) return null;
 
-        Cell cell = row.getCell(prdIdx);
-        if (cell == null) return null;
-        String prdVal = formatter.formatCellValue(cell).trim();
-        if (prdVal.isEmpty()) return null;
+        String mainBarcode = "", subBarcode = "", product = "";
 
-        String prdCode = nextToken(prdVal, 0);
-        if (prdCode == null) return null;
-        String itemCode = nextToken(prdVal, prdCode.length() + 1);
-        int nameStart = prdCode.length() + 1 + (itemCode != null ? itemCode.length() + 1 : 0);
-        String product = nameStart < prdVal.length() ? prdVal.substring(nameStart).trim() : prdVal;
+        Matcher matcher = barcodePattern.matcher(prdVal);
+        if (matcher.find()) {
+            String barcode = matcher.group(1);
+            mainBarcode = barcode.substring(0, 8);
+            subBarcode = barcode.substring(9, 12);
+            product = prdVal.substring(13);
+        }
+        else {
+            Integer codeIdx = colIdx.get("바코드");
+            if (codeIdx == null) return null;
+            String barcode = ExcelHeaderUtils.getCellString(row, formatter, codeIdx);
+            if (barcode == null) return null;
 
-        return new CategoryParseResult(prdCode, itemCode, product);
+            if (barcode.length() >= 8)
+                mainBarcode = barcode.substring(0, 8);
+            if (barcode.length() >= 12) {
+                subBarcode = barcode.substring(8);
+                if (subBarcode.startsWith("-"))
+                    subBarcode = barcode.substring(9);
+            }
+            product = prdVal;
+        }
+
+        return new CategoryParseResult(mainBarcode, subBarcode, product);
     }
 
     @Override

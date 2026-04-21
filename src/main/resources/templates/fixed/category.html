@@ -47,6 +47,22 @@
 <div th:replace="~{fragments/sidebar :: breadcrumb(${ {'반품관리','고정관리','분류등록'} })}"></div>
 <div class="content-body">
 
+    <!-- 비밀번호 입력 영역 -->
+    <div th:if="${passwordRequired}" id="access-password-section" class="access-password-section">
+        <div class="access-password-card">
+            <h2>비밀번호 확인</h2>
+            <p>분류등록을 사용하려면 비밀번호를 입력해주세요.</p>
+            <div class="access-password-form">
+                <input type="password" id="access-password-input" class="access-password-input"
+                       placeholder="비밀번호" autocomplete="current-password"/>
+                <button type="button" class="access-password-button" onclick="submitAccessPassword()">확인</button>
+            </div>
+            <p id="access-password-error" class="access-password-error" hidden></p>
+        </div>
+    </div>
+
+    <div id="categoryContent" th:style="${passwordRequired} ? 'display:none;' : ''">
+
     <table border="0" cellpadding="0" cellspacing="0" class="title_table">
     <tr>
         <th th:each="id : ${StoreId}" th:class="${store==id ? store : ''}">
@@ -87,8 +103,11 @@
             <caption>
                 <form name="catDownload" method="POST" action="/fixed/category/download" style="display:inline;">
                     <input type="hidden" name="store" th:value="${store}"/>
-                    <input type="button" value="엑셀 다운로드" onclick="document.forms['catDownload'].submit();" style="height:30px;"/>
+                    <a href="javascript:document.forms['catDownload'].submit();">
+                        <img src="/XlsIcon.jpg" border="0" align="top" style="height:30px;"></a>
                 </form>
+                &nbsp;&nbsp;&nbsp;
+                <input type="button" value="추가" onclick="addRow()" style="height:30px;"/>
                 &nbsp;
                 <input type="button" value="수정" onclick="submitLocations()" style="height:30px;"/>
             </caption>
@@ -114,37 +133,70 @@
     </div>
 
     <script>
-        function checkDuplicateLocations() {
-            var inputs = document.querySelectorAll('[id^="loc_"]');
-            // 변경된 장소값 수집 (현재 입력값 기준)
-            var locMap = {};  // location -> [mainBarcode, ...]
-            inputs.forEach(function(input) {
+        function addRow() {
+            var table = document.getElementById('categoryTable');
+            var tbody = document.createElement('tbody');
+            tbody.className = 'new-row';
+            tbody.innerHTML =
+                '<tr style="background:#fff9db;">' +
+                    '<td></td>' +
+                    '<td><input type="text" class="new-loc" size="4"/></td>' +
+                    '<td><input type="text" class="new-barcode" size="12"/></td>' +
+                    '<td><input type="text" class="new-product" size="40" style="width:100%;"/></td>' +
+                '</tr>';
+            table.appendChild(tbody);
+            tbody.querySelector('.new-barcode').focus();
+        }
+
+        function collectNewRows() {
+            var rows = [];
+            document.querySelectorAll('tbody.new-row').forEach(function(tb) {
+                var barcode = tb.querySelector('.new-barcode').value.trim();
+                if (barcode === '') return;
+                rows.push({
+                    tbody: tb,
+                    mainBarcode: barcode,
+                    product: tb.querySelector('.new-product').value.trim(),
+                    location: tb.querySelector('.new-loc').value.trim()
+                });
+            });
+            return rows;
+        }
+
+        function checkDuplicateLocations(newRows) {
+            var locMap = {};  // location -> count
+            document.querySelectorAll('[id^="loc_"]').forEach(function(input) {
                 var loc = input.value.trim();
                 if (loc === '' || loc === '시즌아웃') return;
-                var mainBarcode = input.id.replace('loc_', '');
-                if (!locMap[loc]) locMap[loc] = [];
-                locMap[loc].push(mainBarcode);
+                locMap[loc] = (locMap[loc] || 0) + 1;
+            });
+            newRows.forEach(function(r) {
+                if (r.location === '' || r.location === '시즌아웃') return;
+                locMap[r.location] = (locMap[r.location] || 0) + 1;
             });
 
             var dupLocs = [];
             for (var loc in locMap) {
-                if (locMap[loc].length > 1) dupLocs.push(loc);
+                if (locMap[loc] > 1) dupLocs.push(loc);
             }
             return dupLocs;
         }
 
         function submitLocations() {
+            var newRows = collectNewRows();
+
             // 클라이언트 중복 체크
-            var dupLocs = checkDuplicateLocations();
+            var dupLocs = checkDuplicateLocations(newRows);
             if (dupLocs.length > 0) {
                 alert('중복되는 장소가 존재합니다. [' + dupLocs.join(', ') + ']');
                 return;
             }
 
-            var inputs = document.querySelectorAll('[id^="loc_"]');
             var store = document.getElementById('store').value;
             var promises = [];
-            inputs.forEach(function(input) {
+
+            // 기존 행 장소 수정
+            document.querySelectorAll('[id^="loc_"]').forEach(function(input) {
                 var loc = input.getAttribute('loc');
                 if (input.value.trim() !== loc) {
                     var mainBarcode = input.id.replace('loc_', '');
@@ -159,22 +211,78 @@
                     );
                 }
             });
+
+            // 신규 행 등록
+            newRows.forEach(function(r) {
+                promises.push(
+                    fetch('/fixed/category/insert', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'store=' + encodeURIComponent(store) +
+                              '&mainBarcode=' + encodeURIComponent(r.mainBarcode) +
+                              '&product=' + encodeURIComponent(r.product) +
+                              '&location=' + encodeURIComponent(r.location)
+                    }).then(res => res.json())
+                );
+            });
+
             if (promises.length === 0) {
-                alert('변경된 장소가 없습니다.');
+                alert('변경된 내용이 없습니다.');
                 return;
             }
             Promise.all(promises).then(results => {
-                var dupList = [];
+                var errors = [];
                 results.forEach(function(data) {
-                    if (!data.result) dupList.push(data.message);
+                    if (!data.result) errors.push(data.message);
                 });
-                if (dupList.length > 0) {
-                    alert(dupList.join('\n'));
+                if (errors.length > 0) {
+                    alert(errors.join('\n'));
                 } else {
                     location.reload();
                 }
             });
         }
+    </script>
+
+    </div><!-- categoryContent -->
+
+    <script th:if="${passwordRequired}">
+        (function () {
+            var input = document.getElementById('access-password-input');
+            var error = document.getElementById('access-password-error');
+
+            window.submitAccessPassword = function () {
+                fetch('/session/password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'password=' + encodeURIComponent(input.value)
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.result) {
+                        document.getElementById('access-password-section').style.display = 'none';
+                        document.getElementById('categoryContent').style.display = '';
+                    } else {
+                        error.textContent = data.message || '비밀번호를 다시 확인해주세요.';
+                        error.hidden = false;
+                        input.focus();
+                        input.select();
+                    }
+                })
+                .catch(function () {
+                    error.textContent = '비밀번호 확인 중 오류가 발생했습니다.';
+                    error.hidden = false;
+                });
+            };
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitAccessPassword();
+                }
+            });
+            input.focus();
+        })();
     </script>
 
 </div><!-- content-body -->

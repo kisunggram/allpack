@@ -5,9 +5,38 @@
     <title>재고관리</title>
     <link rel="stylesheet" type="text/css" href="/common.css">
     <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <style>
+        .inventory-table-wrap {
+            overflow-x: auto;
+        }
+
+        .inventory-table {
+            width: max-content;
+            min-width: 100%;
+            max-width: none;
+        }
+
+        .inventory-table th {
+            white-space: nowrap;
+        }
+
+        .product-name-cell {
+            max-width: 480px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-name-cell {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
     <script>
         function confirmUpload() {
-            return confirm('엑셀 업로드시 입고/출고 수량이 초기화되고 모든 데이터가 덮어씌워집니다.');
+            return confirm('엑셀 업로드시 입고/출고 수량이 초기화되고 모든 데이터가 덮어써집니다.');
         }
 
         function submitUpdates() {
@@ -53,13 +82,14 @@
         </span>
     </form>
 
-    <div style="margin-top:10px;">
-        <table border="0" cellpadding="0" cellspacing="0" class="rst_table">
+    <div style="margin-top:10px;" class="inventory-table-wrap">
+        <table border="0" cellpadding="0" cellspacing="0" class="rst_table inventory-table">
             <caption>
                 <form name="invDownload" method="POST" action="/inventory/download" style="display:inline;">
-                    <input type="button" value="엑셀 다운로드" onclick="document.forms['invDownload'].submit();" style="height:30px;"/>
+                    <a href="javascript:document.forms['invDownload'].submit();">
+                        <img src="/XlsIcon.jpg" border="0" align="top" style="height:30px;"></a>
                 </form>
-                &nbsp;
+                &nbsp;&nbsp;&nbsp;
                 <input type="button" value="수정" onclick="submitUpdates()" style="height:30px;"/>
             </caption>
             <thead>
@@ -67,13 +97,13 @@
                 <th>구역</th>
                 <th>장소</th>
                 <th>로케이션</th>
-                <th>바코드</th>
-                <th>품명</th>
-                <th>단품코드</th>
-                <th>단품명</th>
-                <th>기준수량</th>
+                <th>바코드<br>(상품코드)</th>
+                <th>상품명</th>
+                <th>품목코드</th>
+                <th>품목명</th>
+                <th>기초수량<br>(재고합계)</th>
                 <th>입고수량</th>
-                <th>출고수량</th>
+                <th>출고수량<br>(최근출고수량)</th>
                 <th>실수량</th>
             </tr>
             </thead>
@@ -83,9 +113,13 @@
                 <td><input type="text" class="place-input" th:value="${vo.place}" size="3"/></td>
                 <td th:text="${vo.location}"></td>
                 <td th:text="${vo.barcode}"></td>
-                <td th:text="${vo.product}"></td>
+                <td class="product-name-cell"
+                    th:title="${vo.product}"
+                    th:text="${#strings.length(vo.product) > 30 ? #strings.substring(vo.product, 0, 30) + '...' : vo.product}"></td>
                 <td th:text="${vo.itemCode}"></td>
-                <td th:text="${vo.itemName}"></td>
+                <td class="item-name-cell"
+                    th:title="${vo.itemName}"
+                    th:text="${#strings.length(vo.itemName) > 10 ? #strings.substring(vo.itemName, 0, 10) + '...' : vo.itemName}"></td>
                 <td><input type="number" class="baseqty-input" th:value="${vo.baseQty}" size="4" style="width:50px;"/></td>
                 <td th:text="${vo.inQty}"></td>
                 <td th:text="${vo.outQty}"></td>
@@ -95,8 +129,8 @@
         </table>
     </div>
 
-</div><!-- content-body -->
-</div><!-- main-content -->
-</div><!-- layout -->
+</div>
+</div>
+</div>
 </body>
 </html>

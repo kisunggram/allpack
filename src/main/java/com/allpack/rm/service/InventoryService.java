@@ -1,25 +1,37 @@
 package com.allpack.rm.service;
 
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.allpack.rm.dto.InventoryDto;
 import com.allpack.rm.mapper.InventoryMapper;
+import com.allpack.rm.util.ExcelHeaderUtils;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class InventoryService {
+
+    private static final Set<String> INVENTORY_HEADERS = Set.of(
+            "구역", "장소", "로케이션", "바코드", "상품코드", "품명", "상품명",
+            "단품코드", "단품명", "기준수량", "재고합계");
 
     private final InventoryMapper inventoryMapper;
 
@@ -39,35 +51,71 @@ public class InventoryService {
             Sheet sheet = workbook.getSheetAt(0);
             DataFormatter formatter = new DataFormatter();
 
-            Row headerRow = sheet.getRow(0);
-            if (headerRow == null) return "헤더 행이 없습니다.";
+            int headerRowIdx = ExcelHeaderUtils.findHeaderRowIndex(sheet, formatter, INVENTORY_HEADERS, 3);
+            if (headerRowIdx < 0) {
+                return "헤더 행을 찾을 수 없습니다.";
+            }
 
-            // 칼럼 인덱스 찾기
-            int areaIdx = -1, placeIdx = -1, locIdx = -1, barcodeIdx = -1;
-            int productIdx = -1, itemCodeIdx = -1, itemNameIdx = -1, qtyIdx = -1;
+            Row headerRow = sheet.getRow(headerRowIdx);
 
-            for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
-                String val = formatter.formatCellValue(headerRow.getCell(i)).trim();
+            int areaIdx = -1;
+            int placeIdx = -1;
+            int locIdx = -1;
+            int barcodeIdx = -1;
+            int productIdx = -1;
+            int itemCodeIdx = -1;
+            int itemNameIdx = -1;
+            int qtyIdx = -1;
+
+            for (int i = 0; i < headerRow.getLastCellNum(); i++) {
+                String val = ExcelHeaderUtils.normalizeHeader(formatter.formatCellValue(headerRow.getCell(i)));
                 switch (val) {
-                    case "구역": areaIdx = i; break;
-                    case "장소": placeIdx = i; break;
-                    case "로케이션": locIdx = i; break;
-                    case "바코드": barcodeIdx = i; break;
-                    case "품명": productIdx = i; break;
-                    case "단품코드": itemCodeIdx = i; break;
-                    case "단품명": itemNameIdx = i; break;
-                    case "수량": qtyIdx = i; break;
+                    case "구역":
+                        areaIdx = i;
+                        break;
+                    case "장소":
+                        placeIdx = i;
+                        break;
+                    case "로케이션":
+                        locIdx = i;
+                        break;
+                    case "바코드":
+                    case "상품코드":
+                        barcodeIdx = i;
+                        break;
+                    case "품명":
+                    case "상품명":
+                        productIdx = i;
+                        break;
+                    case "단품코드":
+                        itemCodeIdx = i;
+                        break;
+                    case "단품명":
+                        itemNameIdx = i;
+                        break;
+                    case "기준수량":
+                    case "재고합계":
+                        qtyIdx = i;
+                        break;
+                    default:
+                        break;
                 }
             }
 
-            // 전체 삭제 후 삽입
+            log.info("### [Inventory.upload] 헤더 행: {}", headerRowIdx);
+            log.info("### [Inventory.upload] 구역:{}, 장소:{}, 로케이션:{}, 바코드:{}", areaIdx, placeIdx, locIdx, barcodeIdx);
+            log.info("### [Inventory.upload] 상품명:{}, 단품코드:{}, 단품명:{}", productIdx, itemCodeIdx, itemNameIdx);
+            log.info("### [Inventory.upload] 기준수량:{}", qtyIdx);
+
             inventoryMapper.deleteAll();
 
             int rowSize = sheet.getPhysicalNumberOfRows();
             int insertCount = 0;
-            for (int i = 1; i < rowSize; i++) {
+            for (int i = headerRowIdx + 1; i < rowSize; i++) {
                 Row row = sheet.getRow(i);
-                if (row == null) continue;
+                if (row == null || isEmptyRow(row, formatter)) {
+                    continue;
+                }
 
                 InventoryDto dto = new InventoryDto();
                 dto.setArea(getCellValue(formatter, row, areaIdx));
@@ -85,21 +133,41 @@ public class InventoryService {
                     dto.setBaseQty(0);
                 }
 
+                dto.setInQty(0);
+                dto.setOutQty(0);
+
                 inventoryMapper.insertInventory(dto);
                 insertCount++;
             }
 
             log.info("### [Inventory.upload] inserted: {}", insertCount);
         } catch (Exception ex) {
-            log.error("### [Inventory.upload] Ex: {}", ex.getMessage());
+            log.error("### [Inventory.upload] Ex: {}", ex.getMessage(), ex);
             throw new RuntimeException(ex);
         }
 
         return "";
     }
 
+    private boolean isEmptyRow(Row row, DataFormatter formatter) {
+        int lastCellNum = row.getLastCellNum();
+        if (lastCellNum < 0) {
+            return true;
+        }
+
+        for (int cellIdx = 0; cellIdx < lastCellNum; cellIdx++) {
+            if (!formatter.formatCellValue(row.getCell(cellIdx)).trim().isEmpty()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private String getCellValue(DataFormatter formatter, Row row, int idx) {
-        if (idx < 0) return "";
+        if (idx < 0) {
+            return "";
+        }
         Cell cell = row.getCell(idx);
         return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
@@ -116,7 +184,7 @@ public class InventoryService {
             headerRow.createCell(1).setCellValue("장소");
             headerRow.createCell(2).setCellValue("로케이션");
             headerRow.createCell(3).setCellValue("바코드");
-            headerRow.createCell(4).setCellValue("품명");
+            headerRow.createCell(4).setCellValue("상품명");
             headerRow.createCell(5).setCellValue("단품코드");
             headerRow.createCell(6).setCellValue("단품명");
             headerRow.createCell(7).setCellValue("기준수량");
@@ -142,11 +210,14 @@ public class InventoryService {
 
             workbook.write(ost);
         } catch (Exception ex) {
-            log.error("### [Inventory.getExcel] Ex: {}", ex.getMessage());
+            log.error("### [Inventory.getExcel] Ex: {}", ex.getMessage(), ex);
             return ex.getMessage();
         } finally {
             workbook.dispose();
-            try { workbook.close(); } catch (Exception ignored) {}
+            try {
+                workbook.close();
+            } catch (Exception ignored) {
+            }
         }
         return "";
     }

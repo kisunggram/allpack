@@ -1,17 +1,25 @@
 package com.allpack.rm.service;
 
 import java.io.OutputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.allpack.rm.dto.FixedCategoryDto;
 import com.allpack.rm.dto.UploadResultDto;
@@ -19,11 +27,15 @@ import com.allpack.rm.mapper.FixedCategoryMapper;
 import com.allpack.rm.store.StoreParser;
 import com.allpack.rm.store.StoreParser.CategoryParseResult;
 import com.allpack.rm.store.StoreRegistry;
+import com.allpack.rm.util.ExcelHeaderUtils;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class FixedCategoryService {
+
+    private static final Set<String> CATEGORY_HEADERS = Set.of(
+            "장소", "바코드", "품목명");
 
     private final FixedCategoryMapper fixedCategoryMapper;
     private final StoreRegistry storeRegistry;
@@ -47,13 +59,14 @@ public class FixedCategoryService {
             Sheet sheet = workbook.getSheetAt(0);
             DataFormatter formatter = new DataFormatter();
 
-            Row headerRow = sheet.getRow(0);
-            if (headerRow == null) {
+            int headerRowIdx = ExcelHeaderUtils.findHeaderRowIndex(sheet, formatter, CATEGORY_HEADERS, 2);
+            if (headerRowIdx < 0) {
                 uploadResult.setError("헤더 행이 없습니다.");
                 return uploadResult;
             }
 
-            Map<String, Integer> colIdx = buildColumnIndex(headerRow, formatter);
+            Row headerRow = sheet.getRow(headerRowIdx);
+            Map<String, Integer> colIdx = ExcelHeaderUtils.buildColumnIndex(headerRow, formatter);
 
             fixedCategoryMapper.deleteByStore(store);
 
@@ -64,17 +77,23 @@ public class FixedCategoryService {
             int locCol = colIdx.getOrDefault("장소", -1);
             int totalRows = 0;
             int rowSize = sheet.getPhysicalNumberOfRows();
-            for (int i = 1; i < rowSize; i++) {
+            for (int i = headerRowIdx + 1; i < rowSize; i++) {
                 Row row = sheet.getRow(i);
-                if (row == null) continue;
+                if (row == null) {
+                    continue;
+                }
 
                 String location = locCol >= 0 ? formatter.formatCellValue(row.getCell(locCol)).trim() : "";
 
                 CategoryParseResult result = parser.parseCategoryRow(row, formatter, colIdx);
-                if (result == null) continue;
+                if (result == null) {
+                    continue;
+                }
 
                 totalRows++;
-                if (location.isEmpty()) location = "시즌아웃";
+                if (location.isEmpty()) {
+                    location = "시즌아웃";
+                }
 
                 if (!barcodeMap.containsKey(result.mainBarcode)) {
                     FixedCategoryDto dto = new FixedCategoryDto();
@@ -108,16 +127,39 @@ public class FixedCategoryService {
         return uploadResult;
     }
 
+    public String insertRow(String store, String mainBarcode, String product, String location) {
+        if (mainBarcode == null || mainBarcode.trim().isEmpty()) {
+            return "바코드를 입력해주세요.";
+        }
+        String loc = (location == null || location.trim().isEmpty()) ? "시즌아웃" : location.trim();
+        if (!"시즌아웃".equals(loc) && fixedCategoryMapper.checkDuplicateLocation(store, loc, mainBarcode.trim()) > 0) {
+            return "중복되는 위치가 존재합니다. [" + loc + "]";
+        }
+        try {
+            FixedCategoryDto dto = new FixedCategoryDto();
+            dto.setStore(store);
+            dto.setMainBarcode(mainBarcode.trim());
+            dto.setProduct(product == null ? "" : product.trim());
+            dto.setLocation(loc);
+            fixedCategoryMapper.insertCategory(dto);
+        } catch (Exception ex) {
+            log.error("### [FixedCategory.insertRow] barcode: {}, Ex: {}", mainBarcode, ex.getMessage());
+            return "[" + mainBarcode + "] 등록 실패: 중복된 바코드일 수 있습니다.";
+        }
+        return "";
+    }
+
     public String updateLocation(String store, String mainBarcode, String newLocation) {
-        int dupCount = fixedCategoryMapper.checkDuplicateLocation(store, newLocation, mainBarcode);
-        if (dupCount > 0) {
-            return "중복되는 장소가 존재합니다.";
+        String loc = (newLocation == null || newLocation.trim().isEmpty()) ? "시즌아웃" : newLocation.trim();
+        if (!"시즌아웃".equals(loc)
+                && fixedCategoryMapper.checkDuplicateLocation(store, loc, mainBarcode) > 0) {
+            return "중복되는 위치가 존재합니다.";
         }
 
         FixedCategoryDto dto = new FixedCategoryDto();
         dto.setStore(store);
         dto.setMainBarcode(mainBarcode);
-        dto.setLocation(newLocation);
+        dto.setLocation(loc);
         fixedCategoryMapper.updateLocation(dto);
         return "";
     }
@@ -151,19 +193,11 @@ public class FixedCategoryService {
             return ex.getMessage();
         } finally {
             workbook.dispose();
-            try { workbook.close(); } catch (Exception ignored) {}
+            try {
+                workbook.close();
+            } catch (Exception ignored) {
+            }
         }
         return "";
-    }
-
-    private Map<String, Integer> buildColumnIndex(Row headerRow, DataFormatter formatter) {
-        Map<String, Integer> colIdx = new HashMap<>();
-        for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
-            Cell cell = headerRow.getCell(i);
-            if (cell == null) continue;
-            String val = formatter.formatCellValue(cell).trim();
-            if (!val.isEmpty()) colIdx.put(val, i);
-        }
-        return colIdx;
     }
 }

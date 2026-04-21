@@ -12,41 +12,9 @@
     background-color: #ffffff;
     border-right: 1px solid #dee2e6;
     font-size: 13px;
-    transition: width 0.25s, min-width 0.25s;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-}
-
-.sidebar.collapsed {
-    width: 40px;
-    min-width: 40px;
-}
-
-.sidebar.collapsed .sidebar-content {
-    display: none;
-}
-
-.sidebar.collapsed .toggle-btn {
-    text-align: center;
-    padding-left: 0;
-}
-
-/* Toggle button */
-.toggle-btn {
-    display: block;
-    background: #f8f9fa;
-    border: none;
-    border-bottom: 1px solid #dee2e6;
-    color: #495057;
-    font-size: 17px;
-    padding: 9px 12px;
-    cursor: pointer;
-    text-align: right;
-    width: 100%;
-}
-.toggle-btn:hover {
-    background: #e9ecef;
 }
 
 /* Menu groups */
@@ -61,7 +29,6 @@
     padding: 10px 14px;
     color: #343a40;
     background: #f8f9fa;
-    cursor: pointer;
     user-select: none;
     display: flex;
     justify-content: space-between;
@@ -86,11 +53,6 @@
 }
 
 .sidebar > .sidebar-content > .menu-group > ul {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease;
-}
-.sidebar > .sidebar-content > .menu-group > ul.open {
     max-height: 500px;
 }
 
@@ -129,7 +91,6 @@
     color: #868e96;
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
     user-select: none;
 }
 .sidebar .submenu-title:hover {
@@ -146,11 +107,6 @@
 }
 
 .sidebar ul ul {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease;
-}
-.sidebar ul ul.open {
     max-height: 300px;
 }
 
@@ -194,4 +150,61 @@
 .content-body {
     flex: 1;
     padding: 10px 16px;
+}
+
+.access-password-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 160px);
+}
+
+.access-password-card {
+    width: min(360px, calc(100vw - 32px));
+    padding: 24px;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e9ecef;
+}
+
+.access-password-card h2 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #212529;
+}
+
+.access-password-card p {
+    margin: 0 0 12px;
+    color: #495057;
+}
+
+.access-password-form {
+    display: flex;
+    gap: 8px;
+}
+
+.access-password-input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.access-password-button {
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 6px;
+    background: #1971c2;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.access-password-error {
+    margin-top: 10px;
+    color: #e03131;
+    font-size: 13px;
 }

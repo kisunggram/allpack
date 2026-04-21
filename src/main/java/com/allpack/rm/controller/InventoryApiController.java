@@ -17,25 +17,25 @@ public class InventoryApiController {
     private final InventoryMapper inventoryMapper;
 
     @PostMapping("/api/inventory/in")
-    public ApiResultDto stockIn(@RequestParam("id") Long id) {
+    public ApiResultDto stockIn(@RequestParam("barcode") Long barcode) {
         try {
-            inventoryMapper.incrementIn(id);
-            log.info("### [Inventory.in] id: {}", id);
+            inventoryMapper.incrementIn(barcode);
+            log.info("### [Inventory.in] barcode: {}", barcode);
             return ApiResultDto.success("ok");
         } catch (Exception ex) {
-            log.error("### [Inventory.in] id: {}, Ex: {}", id, ex.getMessage());
+            log.error("### [Inventory.in] barcode: {}, Ex: {}", barcode, ex.getMessage());
             return ApiResultDto.fail(ex.getMessage());
         }
     }
 
     @PostMapping("/api/inventory/out")
-    public ApiResultDto stockOut(@RequestParam("id") Long id) {
+    public ApiResultDto stockOut(@RequestParam("barcode") Long barcode) {
         try {
-            inventoryMapper.incrementOut(id);
-            log.info("### [Inventory.out] id: {}", id);
+            inventoryMapper.incrementOut(barcode);
+            log.info("### [Inventory.out] barcode: {}", barcode);
             return ApiResultDto.success("ok");
         } catch (Exception ex) {
-            log.error("### [Inventory.out] id: {}, Ex: {}", id, ex.getMessage());
+            log.error("### [Inventory.out] barcode: {}, Ex: {}", barcode, ex.getMessage());
             return ApiResultDto.fail(ex.getMessage());
         }
     }

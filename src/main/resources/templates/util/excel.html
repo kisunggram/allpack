@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>유틸 - 엑셀정리</title>
+    <link rel="stylesheet" type="text/css" href="/common.css">
+    <link rel="stylesheet" type="text/css" href="/barcode.css">
+    <script>
+        function confirmUpload() {
+            return confirm('엑셀 업로드시 모든 데이터가 초기화됩니다.');
+        }
+    </script>
+</head>
+<body>
+<div class="layout">
+<div th:replace="~{fragments/sidebar :: sidebar('fixed-category')}"></div>
+<div class="main-content">
+<div th:replace="~{fragments/sidebar :: breadcrumb(${ {'유틸','엑셀정리'} })}"></div>
+<div class="content-body">
+
+    <table border="0" cellpadding="0" cellspacing="0" class="title_table">
+    <tr><td colspan="3" th:class="${store}">
+        <form method="POST" enctype="multipart/form-data" action="/util/excel/upload" onsubmit="return confirmUpload();">
+            <div>
+                <label class="file-label" for="file_cat">파일 선택</label>
+                <input type="file" name="excel" id="file_cat" class="file-input" onchange="document.getElementById('fn_cat').textContent=this.files[0]?this.files[0].name:'선택된 파일 없음'"/>
+                <span class="file-name" id="fn_cat">선택된 파일 없음</span>
+                <input type="submit" value="업로드"/>
+            </div>
+        </form>
+    </td></tr>
+    </table>
+
+    <!-- 업로드 결과 -->
+    <div th:if="${uploadResult != null}" style="margin-top:10px; padding:10px; border:1px solid #dee2e6; border-radius:4px; background:#f8f9fa; max-width:600px;">
+        <p style="margin:0 0 5px;">
+            업로드 완료 : 전체 <b th:text="${uploadResult.totalRows}"></b>건 중 <b th:text="${uploadResult.insertedCount}"></b>건 등록
+            <span th:if="${uploadResult.hasDuplicates()}" style="color:#e03131;">
+                , 중복 <b th:text="${uploadResult.duplicateTotalCount}"></b>건 제외
+            </span>
+        </p>
+        <div th:if="${uploadResult.hasDuplicates()}" style="margin-top:5px; padding:8px; background:#fff5f5; border:1px solid #ffc9c9; border-radius:3px; font-size:12px; color:#c92a2a;">
+            <b>중복 바코드 :</b>
+            <span th:each="entry, iter : ${uploadResult.duplicates}">
+                <span th:text="${entry.key}"></span>(<span th:text="${entry.value}"></span>건)<span th:if="${!iter.last}">, </span>
+            </span>
+        </div>
+    </div>
+
+    <div style="margin-top:10px;">
+        <table id="categoryTable" border="0" cellpadding="0" cellspacing="0" class="rst_table">
+            <caption>
+                <form name="catDownload" method="POST" action="/util/excel/download" style="display:inline;">
+                    <a href="javascript:document.forms['catDownload'].submit();">
+                        <img src="/XlsIcon.jpg" border="0" align="top" style="height:30px;"></a>
+                </form>
+            </caption>
+            <thead>
+            <tr>
+                <th>장소</th>
+                <th>바코드</th>
+                <th>품목명</th>
+                <th>수량</th>
+            </tr>
+            </thead>
+            <tbody th:each="vo : ${list}">
+            <tr>
+                <td th:text="${vo.location}"></td>
+                <td th:text="${vo.barcode}"></td>
+                <td th:text="${vo.product}"></td>
+                <td th:text="${vo.qty}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div><!-- content-body -->
+</div><!-- main-content -->
+</div><!-- layout -->
+</body>
+</html>

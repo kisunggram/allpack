@@ -79,9 +79,10 @@
                 <form name="retDownload" method="POST" action="/fixed/return/download" style="display:inline;">
                     <input type="hidden" name="store" th:value="${store}"/>
                     <input type="hidden" name="date" th:value="${uploadDate}"/>
-                    <input type="button" value="엑셀 다운로드" onclick="document.forms['retDownload'].submit();" style="height:30px;"/>
+                    <a href="javascript:document.forms['retDownload'].submit();">
+                        <img src="/XlsIcon.jpg" border="0" align="top" style="height:30px;"></a>
                 </form>
-                &nbsp;
+                &nbsp;&nbsp;&nbsp;
                 <input type="button" value="수정" onclick="submitUpdates()" style="height:30px;"/>
             </caption>
             <thead>

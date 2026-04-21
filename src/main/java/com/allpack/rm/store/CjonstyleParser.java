@@ -2,6 +2,7 @@ package com.allpack.rm.store;
 
 import java.util.Map;
 
+import com.allpack.rm.util.ExcelHeaderUtils;
 import org.apache.poi.ss.usermodel.*;
 
 import com.allpack.rm.dto.BarcodeDto;
@@ -28,29 +29,18 @@ public class CjonstyleParser implements StoreParser {
 
     @Override
     public CategoryParseResult parseCategoryRow(Row row, DataFormatter formatter, Map<String, Integer> colIdx) {
-        // CJ: 단품코드 앞 8자리 = PrdCode, 명칭 = 제품명
-        Integer itemIdx = colIdx.get("단품코드");
-        if (itemIdx == null) {
-            // 바코드 칼럼 fallback
-            itemIdx = colIdx.get("바코드");
-        }
-        if (itemIdx == null) return null;
+        Integer nameIdx = colIdx.get("품목명");
+        Integer codeIdx = colIdx.get("바코드");
+        if (nameIdx == null || codeIdx == null)
+            return null;
 
-        Cell itemCell = row.getCell(itemIdx);
-        if (itemCell == null) return null;
-        String itemVal = formatter.formatCellValue(itemCell).trim();
-        if (itemVal.isEmpty()) return null;
+        String product = ExcelHeaderUtils.getCellString(row, formatter, nameIdx);
+        String barcode = ExcelHeaderUtils.getCellString(row, formatter, codeIdx);
+        if (product == null || barcode == null)
+            return null;
 
-        String mainBarcode = itemVal.length() > 8 ? itemVal.substring(0, 8) : itemVal;
-        String subBarcode = itemVal.length() > 8 ? itemVal.substring(8) : null;
-
-        Integer nameIdx = colIdx.get("명칭");
-        if (nameIdx == null) nameIdx = colIdx.get("품목명");
-        String product = "";
-        if (nameIdx != null) {
-            Cell nameCell = row.getCell(nameIdx);
-            if (nameCell != null) product = formatter.formatCellValue(nameCell).trim();
-        }
+        String mainBarcode = barcode.length() > 8 ? barcode.substring(0, 8) : barcode;
+        String subBarcode = barcode.length() > 8 ? barcode.substring(8) : null;
 
         return new CategoryParseResult(mainBarcode, subBarcode, product);
     }

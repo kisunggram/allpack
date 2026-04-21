@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.allpack.rm.mapper.UtilCategoryMapper">
+
+    <select id="getList" resultType="com.allpack.rm.dto.UtilCategoryDto">
+        SELECT location, barcode, product, qty
+        FROM UTILE_CATEGORY
+        ORDER BY CAST(location AS UNSIGNED), location
+    </select>
+
+    <insert id="insertCategory" parameterType="com.allpack.rm.dto.UtilCategoryDto">
+        INSERT INTO UTILE_CATEGORY (location, barcode, product, qty)
+        VALUES (#{location}, #{barcode}, #{product}, #{qty})
+    </insert>
+
+    <delete id="deleteCategoryAll">
+        DELETE FROM UTILE_CATEGORY
+    </delete>
+
+</mapper>
