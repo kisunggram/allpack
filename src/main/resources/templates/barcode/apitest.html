@@ -50,10 +50,23 @@
 <br/>
 
 <div>
+    <form method="GET" action="/api/inventory">
+        <table>
+            <tr><th>GET</th><th>/api/inventory</th></tr>
+            <tr><td>barcode</td><td><input type="text" name="barcode"></td></tr>
+            <tr><td></td><td><input type="submit" value="호출" /></td></tr>
+        </table>
+    </form>
+</div>
+
+<br/>
+
+<div>
     <form method="POST" action="/api/inventory/in">
         <table>
             <tr><th>POST</th><th>/api/inventory/in</th></tr>
-            <tr><td>barcode</td><td><input type="number" name="barcode"></td></tr>
+            <tr><td>id</td><td><input type="number" name="id"></td></tr>
+            <tr><td>qty</td><td><input type="number" name="qty" value="1"></td></tr>
             <tr><td></td><td><input type="submit" value="호출" /></td></tr>
         </table>
     </form>
@@ -65,7 +78,8 @@
     <form method="POST" action="/api/inventory/out">
         <table>
             <tr><th>POST</th><th>/api/inventory/out</th></tr>
-            <tr><td>barcode</td><td><input type="number" name="barcode"></td></tr>
+            <tr><td>id</td><td><input type="number" name="id"></td></tr>
+            <tr><td>qty</td><td><input type="number" name="qty" value="1"></td></tr>
             <tr><td></td><td><input type="submit" value="호출" /></td></tr>
         </table>
     </form>

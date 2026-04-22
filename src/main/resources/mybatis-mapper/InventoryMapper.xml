@@ -25,12 +25,19 @@
         WHERE id = #{id}
     </update>
 
-    <update id="incrementIn" parameterType="Long">
-        UPDATE INVENTORY SET inQty = inQty + 1 WHERE id = #{id}
+    <update id="incrementIn">
+        UPDATE INVENTORY SET inQty = inQty + #{qty} WHERE id = #{id}
     </update>
 
-    <update id="incrementOut" parameterType="Long">
-        UPDATE INVENTORY SET outQty = outQty + 1 WHERE id = #{id}
+    <update id="incrementOut">
+        UPDATE INVENTORY SET outQty = outQty + #{qty} WHERE id = #{id}
     </update>
+
+    <select id="findStockByBarcode" parameterType="String" resultType="com.allpack.rm.dto.InventoryStockDto">
+        SELECT id, area, place, product, (baseQty + inQty - outQty) AS qty
+        FROM INVENTORY
+        WHERE barcode = #{barcode}
+        ORDER BY area, CAST(place AS UNSIGNED), place, location
+    </select>
 
 </mapper>
