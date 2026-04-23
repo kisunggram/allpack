@@ -34,7 +34,7 @@
     </update>
 
     <select id="findStockByBarcode" parameterType="String" resultType="com.allpack.rm.dto.InventoryStockDto">
-        SELECT id, area, place, product, (baseQty + inQty - outQty) AS qty
+        SELECT id, area, place, location, product, (baseQty + inQty - outQty) AS qty
         FROM INVENTORY
         WHERE barcode = #{barcode}
         ORDER BY area, CAST(place AS UNSIGNED), place, location

@@ -23,4 +23,9 @@ public interface FixedScanMapper {
     List<FixedHistoryDto> getCategoryHistoryByDate(@Param("store") String store,
                                                    @Param("uploadDate") String uploadDate,
                                                    @Param("scanDate") String scanDate);
+
+    java.util.Map<String, Object> getScanDetail(@Param("store") String store,
+                                                @Param("mainBarcode") String mainBarcode,
+                                                @Param("uploadDate") String uploadDate,
+                                                @Param("scanDate") String scanDate);
 }

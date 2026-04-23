@@ -30,6 +30,23 @@
         ORDER BY scanDate
     </select>
 
+    <select id="getScanDetail" resultType="java.util.LinkedHashMap">
+        SELECT r.mainBarcode          AS mainBarcode,
+               r.uploadDate           AS uploadDate,
+               #{scanDate}            AS scanDate,
+               IFNULL(c.product, '')  AS product,
+               IFNULL(c.location, '') AS location,
+               r.qty                  AS returnQty,
+               IFNULL(r.vip, 0)       AS vip,
+               IFNULL(r.vipLocation, '') AS vipLocation,
+               IFNULL(s.scanCount, 0) AS scanCount
+        FROM FIXED_RETURN r
+        LEFT JOIN FIXED_CATEGORY c ON c.store = r.store AND c.mainBarcode = r.mainBarcode
+        LEFT JOIN FIXED_SCAN s ON s.store = r.store AND s.mainBarcode = r.mainBarcode
+            AND s.uploadDate = r.uploadDate AND s.scanDate = #{scanDate}
+        WHERE r.store = #{store} AND r.mainBarcode = #{mainBarcode} AND r.uploadDate = #{uploadDate}
+    </select>
+
     <select id="getCategoryHistoryByDate" resultType="com.allpack.rm.dto.FixedHistoryDto">
         SELECT DISTINCT c.store, c.mainBarcode, c.product, c.location
         FROM FIXED_SCAN s

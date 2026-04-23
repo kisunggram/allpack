@@ -20,4 +20,8 @@ public interface FixedReturnMapper {
     int updateReturn(FixedReturnDto dto);
 
     List<String> getDistinctDates(@Param("store") String store, @Param("startDate") String startDate, @Param("endDate") String endDate);
+
+    int existsReturn(@Param("store") String store,
+                     @Param("mainBarcode") String mainBarcode,
+                     @Param("uploadDate") String uploadDate);
 }

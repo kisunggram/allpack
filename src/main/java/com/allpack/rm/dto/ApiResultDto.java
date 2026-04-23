@@ -9,9 +9,14 @@ public class ApiResultDto {
     private Object data;
 
     public static ApiResultDto success(String message) {
+        return success(message, null);
+    }
+
+    public static ApiResultDto success(String message, Object data) {
         ApiResultDto dto = new ApiResultDto();
         dto.setResult(true);
         dto.setMessage(message);
+        dto.setData(data);
         return dto;
     }
 

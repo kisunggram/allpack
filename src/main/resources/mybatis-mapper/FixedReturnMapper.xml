@@ -40,4 +40,9 @@
         ORDER BY uploadDate
     </select>
 
+    <select id="existsReturn" resultType="int">
+        SELECT COUNT(*) FROM FIXED_RETURN
+        WHERE store = #{store} AND mainBarcode = #{mainBarcode} AND uploadDate = #{uploadDate}
+    </select>
+
 </mapper>

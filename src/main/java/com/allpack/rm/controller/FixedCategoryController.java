@@ -1,5 +1,6 @@
 package com.allpack.rm.controller;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -13,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import com.allpack.rm.dto.ApiResultDto;
@@ -30,7 +32,8 @@ public class FixedCategoryController {
     private final StoreRegistry storeRegistry;
 
     @GetMapping("/fixed/category")
-    public ModelAndView category(@RequestParam(value = "store", required = false) String store) {
+    public ModelAndView category(@RequestParam(value = "store", required = false) String store,
+                                 HttpServletRequest request) {
         if (store == null || store.isEmpty()) store = storeRegistry.getStoreIds().get(0);
 
         List<FixedCategoryDto> list = fixedCategoryService.getList(store);
@@ -40,8 +43,18 @@ public class FixedCategoryController {
         mv.addObject("StoreName", storeRegistry.getStoreNames());
         mv.addObject("store", store);
         mv.addObject("list", list);
-        mv.addObject("passwordRequired", true);
+        mv.addObject("passwordRequired", !isFromCategoryPage(request));
         return mv;
+    }
+
+    private boolean isFromCategoryPage(HttpServletRequest request) {
+        String referer = request.getHeader("Referer");
+        if (referer == null || referer.isEmpty()) return false;
+        try {
+            return "/fixed/category".equals(URI.create(referer).getPath());
+        } catch (Exception ex) {
+            return false;
+        }
     }
 
     @PostMapping("/fixed/category/upload")

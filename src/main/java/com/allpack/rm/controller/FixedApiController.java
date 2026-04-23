@@ -37,12 +37,19 @@ public class FixedApiController {
             return ApiResultDto.fail("반품등록 데이터가 없습니다.");
         }
 
+        if (fixedReturnMapper.existsReturn(store, mainBarcode, uploadDate) == 0) {
+            log.warn("### [FixedScan] 반품등록에 없는 바코드 - store: {}, barcode: {}, uploadDate: {}",
+                    store, mainBarcode, uploadDate);
+            return ApiResultDto.fail("반품등록에 없는 바코드입니다.");
+        }
+
         String today = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
 
         try {
             fixedScanMapper.upsertScan(store, mainBarcode, uploadDate, today);
             log.info("### [FixedScan] store: {}, barcode: {}, uploadDate: {}, scanDate: {}", store, mainBarcode, uploadDate, today);
-            return ApiResultDto.success("ok");
+            java.util.Map<String, Object> detail = fixedScanMapper.getScanDetail(store, mainBarcode, uploadDate, today);
+            return ApiResultDto.success("ok", detail);
         } catch (Exception ex) {
             log.error("### [FixedScan] store: {}, barcode: {}, Ex: {}", store, mainBarcode, ex.getMessage());
             return ApiResultDto.fail(ex.getMessage());
